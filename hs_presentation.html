@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Title</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="main.css">
+
+  </head>
+  <body>
+    <textarea id="source">
+layout: true
+
+<div class="my-header"></div>
+    <div class="my-footer"><img src="https://www.aquaveo.com/images/aquaveo_logo.svg"/></div>
+
+---
+class: center, middle
+
+
+# HydroServer Automated Installation in AWS using Terraform
+![Terraform Logo](https://www.vectorlogo.zone/logos/terraformio/terraformio-icon.svg)
+![AWS Logo](https://a0.awsstatic.com/libra-css/images/logos/aws_smile-header-desktop-en-white_59x35.png)
+![HydroServer Logo](https://hydroserver2.github.io/hydroserver/logo.png)
+
+---
+
+class: center, middle
+
+# 1 Requirements
+---
+
+# Prepare AWS infrastructure 
+
+HydroServer needs the following requirements in AWS
+
+- Fork with your github account the [hydroserver-ops](https://github.com/hydroserver2/hydroserver-ops)
+- Create a new environment in your fork
+- Configure GitHub's OpenID Connect (OIDC) for your AWS account.
+- Create an IAM role for managing HydroServer deployments with Terraform
+- Create and apply two policies to the role.
+- Create an S3 bucket in your AWS account for Terraform
+- Create default VPC
+- Create the following GitHub environment variables:
+  - AWS_ACCOUNT_ID
+  - AWS_REGION
+  - AWS_IAM_ROLE
+  - TERRAFORM_BUCKET
+- Info:
+ - [requirements](https://hydroserver2.github.io/hydroserver/deployment/aws-deployment-terraform.html#set-up-timescale-cloud-accountaws-deployment-terraform.html#pre-requirements)
+---
+class: center, middle
+# Set Up a Database with TimeScale
+
+---
+# [Using TimeScale Service](https://hydroserver2.github.io/hydroserver/deployment/aws-deployment-terraform.html#set-up-timescale-cloud-account)
+
+- Create a [TimeScale account](https://www.timescale.com/cloud)
+- Open the Project settings and generate a client id
+
+---
+
+# [Set Up Timescale Cloud Account](https://hydroserver2.github.io/hydroserver/deployment/aws-deployment-terraform.html#set-up-timescale-cloud-account)
+
+
+- Create the following GitHub environment variable:
+    - `TIMESCALE_PROJECT_ID`: The project ID
+- Create the following GitHub environment secrets:
+    - `TIMESCALE_ACCESS_KEY`: The access key for the credentials 
+    - `TIMESCALE_SECRET_KEY`: The secret key for the credentials
+
+---
+
+# Using a Postgresql database with the timescale extension
+
+- Install PostgreSQL
+- Open the 5432 port and the http/https ports
+- Find the `listen_addresses` and replace with `*` at `/etc/postgresql/14/main/postgresql.conf`
+- Edit the file `/etc/postgresql/14/main/pg_hba.conf` with
+  ```
+      host    	all    all    0.0.0.0/0   md5
+      host    	all    all    ::/0        md5
+  ```
+- Restart postgres service `sudo systemctl restart postgresql`
+- Install TimeScaleDB [here](https://docs.timescale.com/self-hosted/latest/install/installation-linux/)
+- Notes
+	- [The-right-way-to-install-postgresql-on-aws-ec2-ubuntu-22-04](https://medium.com/@akhilsharma_10270/the-right-way-to-install-postgresql-on-aws-ec2-ubuntu-22-04-c77e72bfb8ef)
+	- [How-to-provision-a-cheap-postgresql-database-in-aws-ec2](https://betterprogramming.pub/how-to-provision-a-cheap-postgresql-database-in-aws-ec2-9984ff3ddaea)
+---
+class: center, middle
+
+# Deploy AWS infrastructure with Terraform
+
+---
+# Deploy AWS infrastructure
+
+Let's start to deploy everything that is needed for the  HydroServer deployment
+
+- From your hydroserver-ops repository: 
+    - > Actions > Workflows > click **Create HydroServer AWS Cloud Deployment**
+- Run the workflow and input the same environment name used for your GitHub environment.
+- The workflow will take several minutes to complete. 
+
+---
+class: center, middle
+
+# Deploy TimeScale Service
+
+---
+# Deploy TimeScale infrastructure
+
+- From your hydroserver-ops repo,click Actions > Workflows > select "Create HydroServer Timescale Cloud Database".
+- Run the workflow, providing your environment name.
+    - **The Django credentials** you provide will be used to create a superuser you can use to log in to the Django admin dashboard. You can change these later if you wish.
+    - **The partition interval** is used to chunk the HydroServer observations table.
+    - **Version** If you want to use the latest version of HydroServer, leave this field blank.
+- After the workflow completes, you should see a new service on your Timescale Cloud dashboard. To connect to this service, retrieve the Timescale database connection details from the output folder in the Terraform S3 bucket you created earlier.
+- Create the following GitHub environment secret:
+- `DATABASE_URL`: Use the database connection string from the Timescale connection details file you looked up in step 3.
+
+---
+class: center, middle
+
+# Deploy HydroServer
+
+---
+# Deploy HydroServer
+
+- From the hydroserver-ops repo, click Actions > Workflows and choose "Deploy HydroServer to AWS Cloud Deployment".
+- Run the workflow, entering your GitHub environment name and optional HydroServer version (leave blank to use the latest version).
+- After the workflow completes, your HydroServer instance should be running at the autogenerated CloudFront URL. You can log in to the admin dashboard at /admin/ using the admin credentials you entered during the Timescale Cloud setup workflow.
+
+---
+
+class: center, middle
+
+# FIN
+
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
